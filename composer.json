@@ -1,7 +1,7 @@
 {
   "name": "kaadon/jwt",
   "type": "library",
-  "description": "kaadon Uuid for PHP",
+  "description": "kaadon jwt for PHP",
   "keywords": [
     "Jwt",
     "Jwttoken",
