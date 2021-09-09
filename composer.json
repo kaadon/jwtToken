@@ -1,17 +1,18 @@
 {
-  "name": "kaadon/uuid",
+  "name": "kaadon/jwt",
   "type": "library",
   "description": "kaadon Uuid for PHP",
   "keywords": [
-    "Uuid",
-    "Uuids",
+    "Jwt",
+    "Jwttoken",
+    "token",
     "kaadon"
   ],
   "homepage": "http://developer.kaadon.com/",
   "license": "MIT",
   "require": {
     "PHP": ">=7.1",
-    "ramsey/uuid": "^4.1"
+    "firebase/php-jwt": "^5.4.0"
   },
   "authors": [
     {
@@ -22,7 +23,7 @@
   ],
   "autoload": {
     "psr-4": {
-      "Kaadon\\Uuid\\": "src"
+      "Kaadon\\Jwt\\": "src"
     }
   }
 }
