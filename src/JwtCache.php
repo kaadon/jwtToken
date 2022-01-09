@@ -11,16 +11,16 @@ class JwtCache
     /**
      * 缓存key
      *
-     * @param int $username 用户名
+     * @param string $identification 用户名
      *
      * @return string
      */
-    public static function key(int $username, string $Module = null)
+    public static function key(string $identification, string $Module = null)
     {
         if (is_null($Module)){
             $Module = 'Api';
         }
-        $key = 'Jwt:' . $Module . ':'.$username;
+        $key = 'Jwt:' . $Module . ':'.$identification;
 
         return $key;
     }
@@ -44,15 +44,15 @@ class JwtCache
     /**
      * 缓存设置
      *
-     * @param int $username 用户id
+     * @param string $identification 用户id
      * @param array   $admin_user    用户信息
      * @param int $expire        有效时间
      *
      * @return array 用户信息
      */
-    public static function set(int $username, $value, $Module = null, $expire = 0)
+    public static function set(string $identification, $value, $Module = null, $expire = 0)
     {
-        $key = self::key($username , $Module);
+        $key = self::key($identification , $Module);
         $val = $value;
         $exp = $expire ?: self::exp();
         Cache::set($key, $val, $exp);
@@ -63,14 +63,14 @@ class JwtCache
     /**
      * 缓存获取
      *
-     * @param int $username 用户id
+     * @param string $identification
      *
      * @param null $Module
      * @return array 用户信息
      */
-    public static function get(int $username, $Module = null)
+    public static function get(string $identification, $Module = null)
     {
-        $key = self::key($username , $Module);
+        $key = self::key($identification , $Module);
         $res = Cache::get($key);
 
         return $res;
@@ -79,13 +79,13 @@ class JwtCache
     /**
      * 缓存删除
      *
-     * @param int $username 用户id
+     * @param string $identification 用户id
      *
      * @return bool
      */
-    public static function del(int $username, $Module = null)
+    public static function del(string $identification, $Module = null)
     {
-        $key = self::key($username , $Module);
+        $key = self::key($identification , $Module);
         $res = Cache::delete($key);
 
         return $res;
