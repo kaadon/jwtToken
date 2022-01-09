@@ -1,16 +1,11 @@
 <?php
-/*
- * @Description  : token
- * @Author       : https://github.com/skyselang
- * @Date         : 2020-05-05
- * @LastEditTime : 2020-08-14
- */
+
 
 namespace Kaadon\Jwt;
 
 use think\facade\Config;
 use Firebase\JWT\JWT as BaseJwt;
-use think\facade\Request;
+use Request;
 
 class Jwt
 {
@@ -58,7 +53,7 @@ EOD,
      *
      * @return string
      */
-    public static function create($data = [])
+    public static function create(string $identification,$data = [])
     {
         $config = Config::get('jwt.token');
         $config = array_merge(self::$config,$config);
@@ -66,18 +61,18 @@ EOD,
         $exp = $config['exp']?: 60*60*24*7;
         $key = $config['private_key']?:self::$privateKey;
         $iss = $config['issuer'];
-        $iat = $time;
         $exp = $time + $exp;
-        $ip = Request::ip();
-        $data = array_merge($data,['ip'=>$ip]);
+        $data['identification'] = $identification;
         $payload = [
             'iss'  => $iss,
-            'iat'  => $iat,
+            'iat'  => $time,
             'exp'  => $exp,
             'data' => $data,
         ];
 
         $token = BaseJwt::encode($payload, $key, 'RS256');
+
+        JwtCache::set($data['identification'], $token);
 
         return $token;
     }
@@ -93,7 +88,7 @@ EOD,
     {
 
         if (empty($token)){
-            $tokenBearer = app('request')->header('Authorization');
+            $tokenBearer = Request::header('Authorization');
             if (!$tokenBearer) {
                 throw new JwtException('token is must.');
             }
@@ -111,9 +106,8 @@ EOD,
         $decoded = BaseJwt::decode($token, $key, array('RS256'));
 
         if (!$decoded || !is_object($decoded)){
-            throw new JwtException('令牌验证失败.');
+            throw new JwtException('Token validation failed.');
         }
-
         return  $decoded;
     }
 }

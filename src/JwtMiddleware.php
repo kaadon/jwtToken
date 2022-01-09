@@ -4,42 +4,45 @@
 namespace Kaadon\Jwt;
 
 
-use Closure;
 use think\Request;
 use think\Response;
 use think\facade\Config;
-use Kaadon\Jwt\Jwt;
 
 class JwtMiddleware
 {
     /**
      * 处理请求
      *
-     * @param Request $request
-     * @param Closure $next
+     * @param \think\Request $request
+     * @param \Closure       $next
      * @return Response
      */
-    public function handle($request, Closure $next)
+    public function handle($request, \Closure $next)
     {
-        $admin_menu_url = admin_menu_url();
-        $api_white_list = Config::get('admin.api_white_list');
-
-        if (!in_array($admin_menu_url, $api_white_list)) {
-            $admin_token = admin_token();
-
-            if (empty($admin_token)) {
-                error('缺少参数:AdminToken');
+        $Currentoute = strtolower($request->pathinfo());
+        $api_white_list = Config::get('jwt.api.white');
+        if (!in_array($Currentoute, $api_white_list)) {
+            $tokenBearer = app('request')->header('Authorization');
+            if (!$tokenBearer) {
+                throw new JwtException('token is must.');
             }
-
-            $admin_user_id = admin_user_id();
-
-            if (empty($admin_user_id)) {
-                error('缺少参数:AdminUserId');
+            $token = substr($tokenBearer, 7);
+            if (!$token) {
+                throw new JwtException('token is required.');
             }
-
-            Jwt::verify($admin_token, $admin_user_id);
+            $JwtData = Jwt::verify($token);
+            $data = [
+                'username' => $JwtData->data->identification
+            ];
+            $Oldtoken = JwtCache::get((int) $data['username']);
+            if ($Oldtoken != $token){
+                throw new JwtException('你的账号在别处登录!');
+            }
+            if (\think\facade\Request::ip() != $JwtData->data->ip){
+                throw new JwtException('网络环境更换,请重新登录!');
+            }
+            $request->username = $JwtData->data->identification;
         }
-
         return $next($request);
     }
 }
