@@ -108,6 +108,15 @@ EOD,
         if (!$decoded || !is_object($decoded)){
             throw new JwtException('Token validation failed.');
         }
+
+        $Oldtoken = JwtCache::get($decoded->data->identification);
+        if ($Oldtoken != $token){
+            throw new JwtException('Your account is logged in elsewhere!');
+        }
+        if (time() > $decoded->data->exp){
+            throw new JwtException('Login expired, please login again');
+        }
+
         return  $decoded;
     }
 }
