@@ -3,9 +3,11 @@
 
 namespace Kaadon\Jwt;
 
+
 use think\facade\Config;
 use Firebase\JWT\JWT as BaseJwt;
-use Request;
+use think\facade\Request;
+
 
 class Jwt
 {
@@ -63,6 +65,7 @@ EOD,
         $iss = $config['issuer'];
         $exp = $time + $exp;
         $data['identification'] = $identification;
+        $data['ip'] = Request::ip();
         $payload = [
             'iss'  => $iss,
             'iat'  => $time,
