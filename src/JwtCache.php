@@ -79,7 +79,7 @@ class JwtCache
     /**
      * 缓存删除
      *
-     * @param string $identification 用户id
+     * @param string $identification
      *
      * @return bool
      */
@@ -87,7 +87,6 @@ class JwtCache
     {
         $key = self::key($identification , $Module);
         $res = Cache::delete($key);
-
         return $res;
     }
 }

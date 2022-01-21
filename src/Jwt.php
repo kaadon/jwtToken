@@ -122,4 +122,16 @@ EOD,
 
         return  $decoded;
     }
+
+    /**
+     * token删除
+     *
+     * @param string  $token         token
+     *
+     * @return json
+    */
+    public static function delete($identification)
+    {
+        return JwtCache::del($identification);
+    }
 }
