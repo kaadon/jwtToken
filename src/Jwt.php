@@ -16,7 +16,6 @@ class Jwt
         // JWT加密算法
         'alg'        => 'HS256',
         //签发者
-        'secret'      => 'Kaadon',
         'issuer'           =>'kaadon',
         // 非对称需要配置
         'private_key'  => <<<EOD
@@ -92,19 +91,19 @@ EOD,
 
         if (empty($token)){
             $tokenBearer = Request::header('Authorization');
-            if (!$tokenBearer) {
-                throw new JwtException('token is must.');
+            if (!$tokenBearer|| !is_string($tokenBearer) || strlen($tokenBearer) < 7) {
+                throw new JwtException('The token does not exist or is illegal');
             }
             $token = substr($tokenBearer, 7);
             if (!$token) {
-                throw new JwtException('token is required.');
+                throw new JwtException('Token is required.');
             }
         }
         $config = Config::get('jwt.token');
         $config = array_merge(self::$config,$config);
         $key     = $config['public_key'];
         if (!$key){
-            throw new JwtException('token is required.');
+            throw new JwtException('Public key not configured');
         }
         $decoded = BaseJwt::decode($token, $key, array('RS256'));
 
@@ -113,11 +112,20 @@ EOD,
         }
         $Oldtoken = JwtCache::get($decoded->data->identification);
 
+        if (empty($Oldtoken)){
+            throw new JwtException('You are not logged in or your login has expired!');
+        }
+
         if ($Oldtoken != $token){
             throw new JwtException('Your account is logged in elsewhere!');
         }
+
         if (time() > $decoded->exp){
             throw new JwtException('Login expired, please login again');
+        }
+
+        if (isset($config['ip']) && !empty($config['ip'] && $decoded->data->ip !== Request::ip())){
+            throw new JwtException('Your login environment has been switched!');
         }
 
         return  $decoded;

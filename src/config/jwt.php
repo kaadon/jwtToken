@@ -2,20 +2,17 @@
 
 
 return [
-        'homeApi'   =>  [
-            'white' =>  [
-                'account/signin'
-            ],
-            'is_post'=> true
-        ],
-        'token' =>  [
-            // JWT加密算法
-            'alg'        => 'HS256',
-            //签发者
-            'secret'      => 'Kaadon',
-            'issuer'           =>'kaadon',
-            // 非对称需要配置
-            'private_key'  => <<<EOD
+    'token' => [
+        // JWT加密算法
+        'alg'         => 'HS256',
+        //签发者
+        'issuer'      => 'kaadon',
+        // JWT有效时间
+        'exp'         => 3600 * 24 * 7,
+        //是否检测ip
+        'checkip'     => false,
+        // 非对称秘钥配置
+        'private_key' => <<<EOD
 -----BEGIN RSA PRIVATE KEY-----
 MIICXAIBAAKBgQC8kGa1pSjbSYZVebtTRBLxBz5H4i2p/llLCrEeQhta5kaQu/Rn
 vuER4W8oDH3+3iuIYW4VQAzyqFpwuzjkDI+17t5t0tyazyZ8JXw+KgXTxldMPEL9
@@ -32,7 +29,7 @@ eUz9sHyD6vkgZzjtxXECQAkp4Xerf5TGfQXGXhxIX52yH+N2LtujCdkQZjXAsGdm
 B2zNzvrlgRmgBrklMTrMYgm1NPcW+bRLGcwgW2PTvNM=
 -----END RSA PRIVATE KEY-----
 EOD,
-            'public_key' => <<<EOD
+        'public_key'  => <<<EOD
 -----BEGIN PUBLIC KEY-----
 MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC8kGa1pSjbSYZVebtTRBLxBz5H
 4i2p/llLCrEeQhta5kaQu/RnvuER4W8oDH3+3iuIYW4VQAzyqFpwuzjkDI+17t5t
@@ -40,7 +37,5 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC8kGa1pSjbSYZVebtTRBLxBz5H
 ehde/zUxo6UvS7UrBQIDAQAB
 -----END PUBLIC KEY-----
 EOD,
-            // JWT有效时间
-            'exp'         => 3600 * 24 * 7,
-        ],
+    ],
 ];
