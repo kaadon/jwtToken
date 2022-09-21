@@ -38,4 +38,7 @@ ehde/zUxo6UvS7UrBQIDAQAB
 -----END PUBLIC KEY-----
 EOD,
     ],
+    'redis' => [
+
+    ]
 ];
