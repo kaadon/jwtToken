@@ -132,7 +132,7 @@ EOD,
         $redis = new \Redis();
         $redis->connect($param['host'] ?: '127.0.0.1', $param['port'] ?: 6379);
         if ($param['password']) {
-            $redis->auth(param['password']);
+            $redis->auth($param['password']);
         }
         if ($param['select']) {
             $redis->select($param['select']);
