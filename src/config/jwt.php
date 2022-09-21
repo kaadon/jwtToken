@@ -38,7 +38,11 @@ ehde/zUxo6UvS7UrBQIDAQAB
 -----END PUBLIC KEY-----
 EOD,
     ],
-    'redis' => [
-
+    //redis
+    'cache' => [
+        'host' => '127.0.0.1',
+        'password' => '123456',
+        'select' => '1',
+        'port' => 6379,
     ]
 ];
