@@ -57,7 +57,7 @@ EOD,
             'data' => $data,
         ];
 
-        $token = BaseJwt::encode($payload, $key, 'RS512');
+        $token = BaseJwt::encode($payload, $key, $config['alg']);
 
         self::redis(Config::get('jwt.cache')?:[])->set($data['identification'], $token, 3 * 24 * 60 * 60);
         return $token;
@@ -89,7 +89,7 @@ EOD,
         if (!$key) {
             throw new JwtException('Public key not configured');
         }
-        $decoded = BaseJwt::decode($token, $key, array('RS256'));
+        $decoded = BaseJwt::decode($token, $key, array($config['alg']));
 
         if (!$decoded || !is_object($decoded)) {
             throw new JwtException('Token validation failed.');
