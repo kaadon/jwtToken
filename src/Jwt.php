@@ -39,7 +39,7 @@ EOD,
      *
      * @return string
      */
-    public static function create(string $identification, $data = [],$ip = null)
+    public static function create(string $identification, $data = [], $ip = null)
     {
         $config                 = Config::get('jwt.token');
         $config                 = array_merge(self::$config, $config);
@@ -49,15 +49,15 @@ EOD,
         $iss                    = $config['issuer'];
         $exp                    = $time + $exp;
         $data['identification'] = $identification;
-        $data['ip']             = $ip?:Request::ip();
+        $data['ip']             = self::getIp();
         $payload                = [
             'iss'  => $iss,
             'iat'  => $time,
             'exp'  => $exp,
             'data' => $data,
         ];
-        $token = BaseJwt::encode($payload, $key, $config['alg']);
-        self::redis(Config::get('jwt.cache')?:[])->set("cache:JWT:" . $data['identification'], $token, $config['exp'] ?: 60 * 60 * 24 * 7);
+        $token                  = BaseJwt::encode($payload, $key, $config['alg']);
+        self::redis(Config::get('jwt.cache') ?: [])->set("cache:JWT:" . $data['identification'], $token, $config['exp'] ?: 60 * 60 * 24 * 7);
         return $token;
     }
 
@@ -68,7 +68,7 @@ EOD,
      *
      * @return json
      */
-    public static function verify($token = null,$ip = null)
+    public static function verify($token = null)
     {
 
         if (empty($token)) {
@@ -92,7 +92,7 @@ EOD,
         if (!$decoded || !is_object($decoded)) {
             throw new JwtException('Token validation failed.');
         }
-        $Oldtoken = self::redis(Config::get('jwt.cache')?:[])->get("cache:JWT:" . $decoded->data->identification);
+        $Oldtoken = self::redis(Config::get('jwt.cache') ?: [])->get("cache:JWT:" . $decoded->data->identification);
 
         if (empty($Oldtoken)) {
             throw new JwtException('You are not logged in or your login has expired!');
@@ -105,10 +105,7 @@ EOD,
         if (time() > $decoded->exp) {
             throw new JwtException('Login expired, please login again');
         }
-        if (empty($ip)){
-            $ip = Request::ip();
-        }
-        if (isset($config['ip']) && !empty($config['ip'] && $decoded->data->ip !== $ip)) {
+        if (isset($config['ip']) && !empty($config['ip'] && $decoded->data->ip !== self::getIp())) {
             throw new JwtException('Your login environment has been switched!');
         }
 
@@ -124,7 +121,7 @@ EOD,
      */
     public static function delete($identification)
     {
-        return self::redis(Config::get('jwt.cache')?:[])->del("cache:JWT:" . $identification);
+        return self::redis(Config::get('jwt.cache') ?: [])->del("cache:JWT:" . $identification);
     }
 
     public static function redis(array $param)
@@ -138,6 +135,31 @@ EOD,
             $redis->select($param['select']);
         }
         return $redis;
+    }
+
+    public static function getIp($type = 0, $adv = true)
+    {
+        $type = $type ? 1 : 0;
+        static $ip = NULL;
+        if ($ip !== NULL) return $ip[$type];
+        if ($adv) {
+            if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+                $arr = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+                $pos = array_search('unknown', $arr);
+                if (false !== $pos) unset($arr[$pos]);
+                $ip = trim($arr[0]);
+            } elseif (isset($_SERVER['HTTP_CLIENT_IP'])) {
+                $ip = $_SERVER['HTTP_CLIENT_IP'];
+            } elseif (isset($_SERVER['REMOTE_ADDR'])) {
+                $ip = $_SERVER['REMOTE_ADDR'];
+            }
+        } elseif (isset($_SERVER['REMOTE_ADDR'])) {
+            $ip = $_SERVER['REMOTE_ADDR'];
+        }
+        // IP地址合法验证
+        $long = sprintf("%u", ip2long((string)$ip));
+        $ip   = $long ? array($ip, $long) : array('0.0.0.0', 0);
+        return $ip[$type];
     }
 
 

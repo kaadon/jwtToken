@@ -22,3 +22,10 @@ if (!function_exists('jwt_delete')) {
         return false;
     }
 }
+
+if (!function_exists('jwt_realIp')) {
+    function jwt_realIp()
+    {
+        return \Kaadon\Jwt\Jwt::getIp();
+    }
+}
