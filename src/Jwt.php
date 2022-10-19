@@ -50,13 +50,16 @@ EOD,
         $exp                    = $time + $exp;
         $data['identification'] = $identification;
         $data['ip']             = self::getIp();
-        $payload                = [
+        if (isset($config['user_agent']) && !empty($config['user_agent'])) {
+            $data['user_agent'] = sha1($_SERVER['HTTP_USER_AGENT']);
+        }
+        $payload = [
             'iss'  => $iss,
             'iat'  => $time,
             'exp'  => $exp,
             'data' => $data,
         ];
-        $token                  = BaseJwt::encode($payload, $key, $config['alg']);
+        $token   = BaseJwt::encode($payload, $key, $config['alg']);
         self::redis(Config::get('jwt.cache') ?: [])->set("cache:JWT:" . $data['identification'], sha1($token), $config['exp'] ?: 60 * 60 * 24 * 7);
         return $token;
     }
@@ -78,7 +81,7 @@ EOD,
             }
             $token = substr($tokenBearer, 7);
             if (!$token) {
-                throw new JwtException('Token is required.');
+                throw new JwtException('Token is required');
             }
         }
         $config = Config::get('jwt.token');
@@ -90,25 +93,28 @@ EOD,
         $decoded = BaseJwt::decode($token, $key, array($config['alg']));
 
         if (!$decoded || !is_object($decoded)) {
-            throw new JwtException('Token validation failed.');
+            throw new JwtException('Token validation failed');
         }
         $Oldtoken = self::redis(Config::get('jwt.cache') ?: [])->get("cache:JWT:" . $decoded->data->identification);
 
         if (empty($Oldtoken)) {
-            throw new JwtException('You are not logged in or your login has expired!');
+            throw new JwtException('You are not logged in or your login has expired');
         }
 
         if ($Oldtoken != sha1($token)) {
-            throw new JwtException('Your account is logged in elsewhere!');
+            throw new JwtException('Your account is logged in elsewhere');
         }
 
         if (time() > $decoded->exp) {
             throw new JwtException('Login expired, please login again');
         }
         if (isset($config['ip']) && !empty($config['ip'] && $decoded->data->ip !== self::getIp())) {
-            throw new JwtException('Your login environment has been switched!');
+            throw new JwtException('Your login environment has been switched');
         }
 
+        if (isset($config['user_agent']) && !empty($config['user_agent']) && $decoded->data->user_agent !== sha1($_SERVER['HTTP_USER_AGENT'])) {
+            throw new JwtException('Your login device has been switched');
+        }
         return $decoded;
     }
 
