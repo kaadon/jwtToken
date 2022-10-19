@@ -57,7 +57,7 @@ EOD,
             'data' => $data,
         ];
         $token                  = BaseJwt::encode($payload, $key, $config['alg']);
-        self::redis(Config::get('jwt.cache') ?: [])->set("cache:JWT:" . $data['identification'], $token, $config['exp'] ?: 60 * 60 * 24 * 7);
+        self::redis(Config::get('jwt.cache') ?: [])->set("cache:JWT:" . $data['identification'], sha1($token), $config['exp'] ?: 60 * 60 * 24 * 7);
         return $token;
     }
 
@@ -98,7 +98,7 @@ EOD,
             throw new JwtException('You are not logged in or your login has expired!');
         }
 
-        if ($Oldtoken != $token) {
+        if ($Oldtoken != sha1($token)) {
             throw new JwtException('Your account is logged in elsewhere!');
         }
 
