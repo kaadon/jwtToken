@@ -39,7 +39,7 @@ EOD,
      *
      * @return string
      */
-    public static function create(string $identification, $data = [])
+    public static function create(string $identification, $data = [],$ip = null)
     {
         $config                 = Config::get('jwt.token');
         $config                 = array_merge(self::$config, $config);
@@ -49,17 +49,15 @@ EOD,
         $iss                    = $config['issuer'];
         $exp                    = $time + $exp;
         $data['identification'] = $identification;
-        $data['ip']             = Request::ip();
+        $data['ip']             = $ip?:Request::ip();
         $payload                = [
             'iss'  => $iss,
             'iat'  => $time,
             'exp'  => $exp,
             'data' => $data,
         ];
-
         $token = BaseJwt::encode($payload, $key, $config['alg']);
-
-        self::redis(Config::get('jwt.cache')?:[])->set($data['identification'], $token, 3 * 24 * 60 * 60);
+        self::redis(Config::get('jwt.cache')?:[])->set("cache:JWT:" . $data['identification'], $token, $config['exp'] ?: 60 * 60 * 24 * 7);
         return $token;
     }
 
@@ -70,7 +68,7 @@ EOD,
      *
      * @return json
      */
-    public static function verify($token = null)
+    public static function verify($token = null,$ip = null)
     {
 
         if (empty($token)) {
@@ -94,7 +92,7 @@ EOD,
         if (!$decoded || !is_object($decoded)) {
             throw new JwtException('Token validation failed.');
         }
-        $Oldtoken = self::redis(Config::get('jwt.cache')?:[])->get($decoded->data->identification);
+        $Oldtoken = self::redis(Config::get('jwt.cache')?:[])->get("cache:JWT:" . $decoded->data->identification);
 
         if (empty($Oldtoken)) {
             throw new JwtException('You are not logged in or your login has expired!');
@@ -107,8 +105,10 @@ EOD,
         if (time() > $decoded->exp) {
             throw new JwtException('Login expired, please login again');
         }
-
-        if (isset($config['ip']) && !empty($config['ip'] && $decoded->data->ip !== Request::ip())) {
+        if (empty($ip)){
+            $ip = Request::ip();
+        }
+        if (isset($config['ip']) && !empty($config['ip'] && $decoded->data->ip !== $ip)) {
             throw new JwtException('Your login environment has been switched!');
         }
 
@@ -124,7 +124,7 @@ EOD,
      */
     public static function delete($identification)
     {
-        return self::redis(Config::get('jwt.cache')?:[])->del($identification);
+        return self::redis(Config::get('jwt.cache')?:[])->del("cache:JWT:" . $identification);
     }
 
     public static function redis(array $param)
