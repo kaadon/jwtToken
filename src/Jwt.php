@@ -50,7 +50,7 @@ EOD,
         $exp                    = $time + $exp;
         $data['identification'] = $identification;
         $data['ip']             = self::getIp();
-        if (isset($config['user_agent']) && !empty($config['user_agent'])) {
+        if (isset($config['user_agent']) && !empty($config['user_agent'] && isset($_SERVER['HTTP_USER_AGENT']))) {
             $data['user_agent'] = sha1($_SERVER['HTTP_USER_AGENT']);
         }
         $payload = [
@@ -61,7 +61,7 @@ EOD,
         ];
         $token   = BaseJwt::encode($payload, $key, $config['alg']);
         $configCache  = Config::get('jwt.cache');
-        self::redis($configCache ?: [])->set(($configCache ? $configCache['perfix'] : "cache:JWT:") . $data['identification'], sha1($token), $config['exp'] ?: 60 * 60 * 24 * 7);
+        self::redis(is_array($configCache) ?$configCache: [])->set((isset($configCache['perfix']) ? $configCache['perfix'] : "cache:JWT:") . $data['identification'], sha1($token), $config['exp'] ?: 60 * 60 * 24 * 7);
         return $token;
     }
 
@@ -74,7 +74,6 @@ EOD,
      */
     public static function verify($token = null)
     {
-
         if (empty($token)) {
             $tokenBearer = Request::header('Authorization');
             if (!$tokenBearer || !is_string($tokenBearer) || strlen($tokenBearer) < 7) {
@@ -96,7 +95,8 @@ EOD,
         if (!$decoded || !is_object($decoded)) {
             throw new JwtException('Token validation failed');
         }
-        $Oldtoken = self::redis(Config::get('jwt.cache') ?: [])->get("cache:JWT:" . $decoded->data->identification);
+        $configCache = Config::get('jwt.cache');
+        $Oldtoken = self::redis(is_array($configCache) ?$configCache: [])->get((isset($configCache['perfix']) ? $configCache['perfix'] : "cache:JWT:") . $decoded->data->identification);
 
         if (empty($Oldtoken)) {
             throw new JwtException('You are not logged in or your login has expired');
@@ -113,7 +113,7 @@ EOD,
             throw new JwtException('Your login environment has been switched');
         }
 
-        if (isset($config['user_agent']) && !empty($config['user_agent']) && $decoded->data->user_agent !== sha1($_SERVER['HTTP_USER_AGENT'])) {
+        if (isset($config['user_agent']) && !empty($config['user_agent']) && isset($decoded->data->user_agent) && $decoded->data->user_agent !== sha1($_SERVER['HTTP_USER_AGENT'])) {
             throw new JwtException('Your login device has been switched');
         }
         return $decoded;
@@ -129,7 +129,7 @@ EOD,
     public static function delete($identification)
     {
         $config = Config::get('jwt.cache');
-        return self::redis($config ?: [])->del(($config ? $config['perfix'] : "cache:JWT:") . $identification);
+        return self::redis(is_array($config) ?$config: [])->del((isset($config['perfix']) ? $config['perfix'] : "cache:JWT:") . $identification);
     }
 
     public static function redis(array $param)
