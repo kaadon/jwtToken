@@ -2,16 +2,17 @@
 
 
 return [
-    'token' => [
+    'token'   => [
+        //验证ip
+        'ip' => true,
+        //验证user_agent
+        'user_agent' => true,
         // JWT加密算法
-        'alg'         => 'HS256',
+        'alg'         => 'RS512',
         //签发者
-        'issuer'      => 'kaadon',
-        // JWT有效时间
-        'exp'         => 3600 * 24 * 7,
-        //是否检测ip
-        'checkip'     => false,
-        // 非对称秘钥配置
+        'secret'      => 'booladmin',
+        'issuer'      => 'booladmin',
+        // 非对称需要配置
         'private_key' => <<<EOD
 -----BEGIN RSA PRIVATE KEY-----
 MIICXAIBAAKBgQC8kGa1pSjbSYZVebtTRBLxBz5H4i2p/llLCrEeQhta5kaQu/Rn
@@ -37,12 +38,14 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC8kGa1pSjbSYZVebtTRBLxBz5H
 ehde/zUxo6UvS7UrBQIDAQAB
 -----END PUBLIC KEY-----
 EOD,
+        // JWT有效时间
+        'exp'         => 3600 * 24 * 7,
     ],
-    //redis
     'cache' => [
-        'host' => '127.0.0.1',
-        'password' => '123456',
-        'select' => '1',
-        'port' => 6379,
+        'host' => env('redis.hostname','127.0.0.1'),
+        'password' => env('redis.password','123456'),
+        'select' => env('redis.select',1),
+        'port' => env('redis.port',6379),
+        'perfix' => env('redis.perfix','cache:') . 'jwt:',
     ]
 ];

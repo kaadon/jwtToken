@@ -39,7 +39,7 @@ EOD,
      *
      * @return string
      */
-    public static function create(string $identification, $data = [], $ip = null)
+    public static function create(string $identification, $data = [])
     {
         $config                 = Config::get('jwt.token');
         $config                 = array_merge(self::$config, $config);
@@ -60,7 +60,8 @@ EOD,
             'data' => $data,
         ];
         $token   = BaseJwt::encode($payload, $key, $config['alg']);
-        self::redis(Config::get('jwt.cache') ?: [])->set("cache:JWT:" . $data['identification'], sha1($token), $config['exp'] ?: 60 * 60 * 24 * 7);
+        $configCache  = Config::get('jwt.cache');
+        self::redis($configCache ?: [])->set(($configCache ? $configCache['perfix'] : "cache:JWT:") . $data['identification'], sha1($token), $config['exp'] ?: 60 * 60 * 24 * 7);
         return $token;
     }
 
@@ -127,7 +128,8 @@ EOD,
      */
     public static function delete($identification)
     {
-        return self::redis(Config::get('jwt.cache') ?: [])->del("cache:JWT:" . $identification);
+        $config = Config::get('jwt.cache');
+        return self::redis($config ?: [])->del(($config ? $config['perfix'] : "cache:JWT:") . $identification);
     }
 
     public static function redis(array $param)
