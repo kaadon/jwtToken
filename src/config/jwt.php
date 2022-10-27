@@ -46,6 +46,6 @@ EOD,
         'password' => env('redis.password','123456'),
         'select' => env('redis.select',1),
         'port' => env('redis.port',6379),
-        'perfix' => env('redis.perfix','cache:') . 'jwt:',
+        'prefix' => env('redis.prefix','cache:') . 'jwt:',
     ]
 ];

@@ -61,7 +61,7 @@ EOD,
         ];
         $token   = BaseJwt::encode($payload, $key, $config['alg']);
         $configCache  = Config::get('jwt.cache');
-        self::redis(is_array($configCache) ?$configCache: [])->set((isset($configCache['perfix']) ? $configCache['perfix'] : "cache:JWT:") . $data['identification'], sha1($token), $config['exp'] ?: 60 * 60 * 24 * 7);
+        self::redis(is_array($configCache) ?$configCache: [])->set((isset($configCache['prefix']) ? $configCache['prefix'] : "cache:JWT:") . $data['identification'], sha1($token), $config['exp'] ?: 60 * 60 * 24 * 7);
         return $token;
     }
 
@@ -96,7 +96,7 @@ EOD,
             throw new JwtException('Token validation failed');
         }
         $configCache = Config::get('jwt.cache');
-        $Oldtoken = self::redis(is_array($configCache) ?$configCache: [])->get((isset($configCache['perfix']) ? $configCache['perfix'] : "cache:JWT:") . $decoded->data->identification);
+        $Oldtoken = self::redis(is_array($configCache) ?$configCache: [])->get((isset($configCache['prefix']) ? $configCache['prefix'] : "cache:JWT:") . $decoded->data->identification);
 
         if (empty($Oldtoken)) {
             throw new JwtException('You are not logged in or your login has expired');
@@ -129,7 +129,7 @@ EOD,
     public static function delete($identification)
     {
         $config = Config::get('jwt.cache');
-        return self::redis(is_array($config) ?$config: [])->del((isset($config['perfix']) ? $config['perfix'] : "cache:JWT:") . $identification);
+        return self::redis(is_array($config) ?$config: [])->del((isset($config['prefix']) ? $config['prefix'] : "cache:JWT:") . $identification);
     }
 
     public static function redis(array $param)
