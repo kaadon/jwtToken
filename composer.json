@@ -13,8 +13,7 @@
   "license": "Apache-2.0",
   "require": {
     "PHP": ">=7.1",
-    "firebase/php-jwt": "^5.4.0",
-    "topthink/framework": "^6.0|^8.*"
+    "firebase/php-jwt": "^5.4.0"
   },
   "authors": [
     {
@@ -37,5 +36,8 @@
         "jwt": "src/config/jwt.php"
       }
     }
+  },
+  "require-dev": {
+    "topthink/framework": "^6|^8"
   }
 }
