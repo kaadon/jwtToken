@@ -4,6 +4,8 @@
 namespace Kaadon\Jwt;
 
 
+use Closure;
+use RedisException;
 use think\Request;
 use think\Response;
 use think\facade\Config;
@@ -13,11 +15,12 @@ class JwtMiddleware
     /**
      * 处理请求
      *
-     * @param \think\Request $request
-     * @param \Closure       $next
+     * @param Request $request
+     * @param Closure $next
      * @return Response
+     * @throws RedisException
      */
-    public function handle($request, \Closure $next)
+    public function handle(Request $request, Closure $next): Response
     {
         $Currentoute = strtolower($request->pathinfo());
         $api_white_list = Config::get('jwt.api.white');

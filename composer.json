@@ -2,18 +2,18 @@
   "name": "kaadon/jwt",
   "type": "library",
   "description": "kaadon jwt for PHP",
-
   "keywords": [
     "Jwt",
     "Jwttoken",
     "token",
     "kaadon"
   ],
-  "homepage": "http://developer.kaadon.com/",
+  "homepage": "https://developer.kaadon.com/",
   "license": "Apache-2.0",
   "require": {
     "PHP": ">=7.1",
-    "firebase/php-jwt": "^5.4.0"
+    "firebase/php-jwt": "^v5.5.1",
+    "ext-redis": "*"
   },
   "authors": [
     {
