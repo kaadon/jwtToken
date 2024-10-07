@@ -2,18 +2,19 @@
 
 
 return [
-    'token'   => [
+    'token' => [
         //验证ip
         'ip' => true,
         //验证user_agent
         'user_agent' => true,
         // JWT加密算法
-        'alg'         => 'RS512',
-        //签发者
-        'secret'      => 'booladmin',
-        'issuer'      => 'booladmin',
+        'alg' => 'RS512',
+        //密码
+        'secret' => 'booladmin',
+        // 签发者
+        'issuer' => 'booladmin',
         // 非对称需要配置
-        'private_key' => <<<EOD
+        'private_key' => env('JWT_PRIVATE_KEY', <<<EOD
 -----BEGIN RSA PRIVATE KEY-----
 MIICXAIBAAKBgQC8kGa1pSjbSYZVebtTRBLxBz5H4i2p/llLCrEeQhta5kaQu/Rn
 vuER4W8oDH3+3iuIYW4VQAzyqFpwuzjkDI+17t5t0tyazyZ8JXw+KgXTxldMPEL9
@@ -29,23 +30,25 @@ qaGwHmUK6xzpUbbacnYrIM6nLSkXgOAwv7XXCojvY614ILTK3iXiLBOxPu5Eu13k
 eUz9sHyD6vkgZzjtxXECQAkp4Xerf5TGfQXGXhxIX52yH+N2LtujCdkQZjXAsGdm
 B2zNzvrlgRmgBrklMTrMYgm1NPcW+bRLGcwgW2PTvNM=
 -----END RSA PRIVATE KEY-----
-EOD,
-        'public_key'  => <<<EOD
+EOD
+        ),
+        'public_key' => env('JWT_PUBLIC_KEY', <<<EOD
 -----BEGIN PUBLIC KEY-----
 MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC8kGa1pSjbSYZVebtTRBLxBz5H
 4i2p/llLCrEeQhta5kaQu/RnvuER4W8oDH3+3iuIYW4VQAzyqFpwuzjkDI+17t5t
 0tyazyZ8JXw+KgXTxldMPEL95+qVhgXvwtihXC1c5oGbRlEDvDF6Sa53rcFVsYJ4
 ehde/zUxo6UvS7UrBQIDAQAB
 -----END PUBLIC KEY-----
-EOD,
+EOD
+        ),
         // JWT有效时间
-        'exp'         => 3600 * 24 * 7,
+        'exp' => 3600 * 24 * 7,
     ],
     'cache' => [
-        'host' => env('redis.hostname','127.0.0.1'),
-        'password' => env('redis.password','123456'),
-        'select' => env('redis.select',1),
-        'port' => env('redis.port',6379),
-        'prefix' => env('redis.prefix','cache:') . 'jwt:',
+        'host' => env('redis.hostname', '127.0.0.1'),
+        'password' => env('redis.password', '123456'),
+        'select' => env('redis.select', 1),
+        'port' => env('redis.port', 6379),
+        'prefix' => env('redis.prefix', 'cache:') . 'jwt:',
     ]
 ];

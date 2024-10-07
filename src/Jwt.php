@@ -7,16 +7,14 @@ namespace Kaadon\Jwt;
 use Firebase\JWT\JWT as BaseJwt;
 use Redis;
 use RedisException;
-use think\Exception;
 use think\facade\Config;
 use think\facade\Request;
-use think\response\Json;
 
 
 class Jwt
 {
 
-    private static $config = [
+    private static array $configuration = [
         // JWT加密算法
         'alg' => 'HS256',
         //签发者
@@ -39,24 +37,24 @@ EOD,
     /**
      * token生成
      *
-     * @param string $identification
+     * @param string $identify
      * @param array $data
      * @return string
      * @throws RedisException
      */
-    public static function create(string $identification, array $data = []): string
+    public static function create(string $identify, array $data = []): string
     {
         $config = Config::get('jwt.token');
-        $config = array_merge(self::$config, $config);
+        $config = array_merge(self::$configuration, $config);
         $time = time();
         $exp = $config['exp'] ?: 60 * 60 * 24 * 7;
         $key = $config['private_key'];
         $iss = $config['issuer'];
         $exp = $time + $exp;
-        $data['identification'] = $identification;
+        $data['identify'] = $identify;
         $data['ip'] = self::getIp();
         if (isset($config['user_agent']) && !empty($config['user_agent'] && isset($_SERVER['HTTP_USER_AGENT']))) {
-            $data['user_agent'] = sha1($_SERVER['HTTP_USER_AGENT']);
+            $data['user_agent'] = sha1($_SERVER['HTTP_USER_AGENT'] . $_SERVER['HTTP_X_FORWARDED_FOR']);
         }
         $payload = [
             'iss' => $iss,
@@ -67,7 +65,7 @@ EOD,
         $token = BaseJwt::encode($payload, $key, $config['alg']);
         if (!empty($config['elsewhere'])) {
             $configCache = Config::get('jwt.cache');
-            self::redis(is_array($configCache) ? $configCache : [])->set(($configCache['prefix'] ?? "cache:JWT:") . $data['identification'], sha1($token), $config['exp'] ?: 60 * 60 * 24 * 7);
+            self::redis(is_array($configCache) ? $configCache : [])->set(($configCache['prefix'] ?? "cache:JWT:") . $data['identify'], sha1($token), $config['exp'] ?: 60 * 60 * 24 * 7);
         }
         return $token;
     }
@@ -78,51 +76,44 @@ EOD,
      * @param string|null $token token
      *
      * @return object
+     * @throws \RedisException
      */
-    public static function verify(string $token = null)
+    public static function verify(string $token = null): object
     {
-        try {
-            //逻辑代码
-            if (empty($token)) {
-                $tokenBearer = Request::header('Authorization');
-                if (!$tokenBearer || !is_string($tokenBearer) || strlen($tokenBearer) < 7) {
-                    throw new Exception('The token does not exist or is illegal');
-                }
-                $token = substr($tokenBearer, 7);
-                if (!$token) {
-                    throw new Exception('Token is required');
-                }
-            }
-            $config = Config::get('jwt.token');
-            $config = array_merge(self::$config, $config);
-            $key = $config['public_key'];
-            if (!$key) {
-                throw new Exception('Public key not configured');
-            }
-            $decoded = BaseJwt::decode($token, $key, array($config['alg']));
-
-            if (!$decoded || !is_object($decoded)) {
-                throw new Exception('Token validation failed');
-            }
-
-            if (!empty($config['elsewhere'])) {
-                $configCache = Config::get('jwt.cache');
-                $Oldtoken = self::redis(is_array($configCache) ? $configCache : [])->get(($configCache['prefix'] ?? "cache:JWT:") . $decoded->data->identification);
-                if (empty($Oldtoken)) throw new Exception('You are not logged in or your login has expired');
-                if ($Oldtoken != sha1($token)) throw new Exception('Your account is logged in elsewhere');
-            }
-
-            if (isset($config['ip']) && !empty($config['ip'] && $decoded->data->ip !== self::getIp())) {
-                throw new Exception('Your login environment has been switched');
-            }
-
-            if (!empty($config['user_agent']) && isset($decoded->data->user_agent) && $decoded->data->user_agent !== sha1($_SERVER['HTTP_USER_AGENT'])) {
-                throw new Exception('Your login device has been switched');
-            }
-            return $decoded;
-        } catch (\Exception $exception) {
-            throw new JwtException($exception->getMessage()) ;
+        //逻辑代码
+        if (empty($token)) {
+            $token = Request::header('Authorization');
         }
+        if (!$token || !is_string($token) || strlen($token) <= 7) {
+            throw new JwtException('The token does not exist or is illegal');
+        }
+        $token = substr($token, 7);
+        $config = Config::get('jwt.token');
+        $config = array_merge(self::$configuration, $config);
+        $key = $config['public_key'];
+        if (!$key) {
+            throw new JwtException('Public key not configured');
+        }
+        $headers =  new \stdClass();
+        $headers->alg = $config['alg'];
+        try {
+            $decoded = BaseJwt::decode($token, $key, $headers);
+        } catch (\Exception $exception) {
+            throw new JwtException("error:{$exception->getMessage()}");
+        }
+        if (!empty($config['elsewhere'])) {
+            $configCache = Config::get('jwt.cache');
+            $OldToken = self::redis(is_array($configCache) ? $configCache : [])->get(($configCache['prefix'] ?? "cache:JWT:") . $decoded->data->identification);
+            if (empty($OldToken)) throw new JwtException('You are not logged in or your login has expired');
+            if ($OldToken != sha1($token)) throw new JwtException('Your account is logged in elsewhere');
+        }
+        if (isset($config['ip']) && !empty($config['ip'] && $decoded->data->ip !== self::getIp())) {
+            throw new JwtException('Your login environment has been switched');
+        }
+        if (!empty($config['user_agent']) && isset($decoded->data->user_agent) && $decoded->data->user_agent !== sha1($_SERVER['HTTP_USER_AGENT'])) {
+            throw new JwtException('Your login device has been switched');
+        }
+        return $decoded;
     }
 
     /**
@@ -152,7 +143,7 @@ EOD,
             }
             return $redis;
         } catch (\Exception $exception) {
-            throw new JwtException("系统错误:联系管理员[REDIS]") ;
+            throw new JwtException("系统错误:联系管理员[REDIS]");
         }
     }
 
