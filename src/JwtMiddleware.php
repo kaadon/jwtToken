@@ -18,7 +18,7 @@ class JwtMiddleware
      * @param Request $request
      * @param Closure $next
      * @return Response
-     * @throws RedisException
+     * @throws RedisException|\Kaadon\Jwt\JwtException
      */
     public function handle(Request $request, Closure $next): Response
     {

@@ -13,7 +13,8 @@
   "require": {
     "PHP": ">=8.1",
     "firebase/php-jwt": "^v6.10.1",
-    "ext-redis": "*"
+    "ext-redis": "*",
+    "kaadon/exceptions": "^0.0.1"
   },
   "authors": [
     {

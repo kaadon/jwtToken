@@ -4,7 +4,9 @@
 namespace Kaadon\Jwt;
 
 
-class JwtException extends \UnexpectedValueException
+use Kaadon\Exceptions\KaadonException;
+
+class JwtException extends KaadonException
 {
 
 }

@@ -16,18 +16,21 @@ class Jwt
 
     private static array $configuration = [
         // JWT加密算法
-        'alg' => 'HS256',
+        'alg' => 'ES256',
         //签发者
         'issuer' => 'kaadon',
         // 非对称需要配置
         'private_key' => <<<EOD
------BEGIN RSA PRIVATE KEY-----
-MIIBVAIBADANBgkqhkiG9w0BAQEFAASCAT4wggE6AgEAAkEAlp50BaGP0MyE0/45FRKpxh0sDGECrm6cpp6DkOBFTTdvlxSNZCsO47NWjxjpIrmXV7H0XjmU+3hpWceQpW65wQIDAQABAkEAiriVkzoiAuTa0YUrfcUaqGTl1ODkX1Nw4+TKt/xW163zjeCHAy2YEe6HxGyJITYu156UhC7cOtdsBvM+a275oQIhANj5B2S651fbKh5qJCkROlqmsnaJx5m1oSTB89VK+CWDAiEAsbYFvcz5FvRr7kRJ9VBNzRsSx67nlI9rRjqF+duLBGsCID+eRRyz8MFB8ceZN6ES/Bk4Z3t6Spw3NVihxez0Xm4hAiAe/bRQnj9OPn/YBHa1XjTDMRZ8VkcyhDRcAfa9VQkQUwIge9SR0zj/8kj2/x+4e7zC5QnYA7Qn3mTpmJ7uVtOP9m4=
------END RSA PRIVATE KEY-----
+-----BEGIN PRIVATE KEY-----
+MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgYJaXP8KapeFy4Lto
+85tNQ+wRzNYGAGZXoZjMb2/GHoihRANCAAQLFJ+Lgjt5A/Vnc8OG6m2TBK5xxGLg
+ZRdae5ojDObyiXsxzX267LJ1KMUAad3FFYSyQWd7BtiPWrJIWPcsQsIK
+-----END PRIVATE KEY-----
 EOD,
         'public_key' => <<<EOD
 -----BEGIN PUBLIC KEY-----
-MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAJaedAWhj9DMhNP+ORUSqcYdLAxhAq5unKaeg5DgRU03b5cUjWQrDuOzVo8Y6SK5l1ex9F45lPt4aVnHkKVuucECAwEAAQ==
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAECxSfi4I7eQP1Z3PDhuptkwSuccRi
+4GUXWnuaIwzm8ol7Mc19uuyydSjFAGndxRWEskFnewbYj1qySFj3LELCCg==
 -----END PUBLIC KEY-----
 EOD,
         // JWT有效时间
@@ -40,7 +43,7 @@ EOD,
      * @param string $identify
      * @param array $data
      * @return string
-     * @throws RedisException
+     * @throws RedisException|\Kaadon\Jwt\JwtException
      */
     public static function create(string $identify, array $data = []): string
     {
@@ -76,7 +79,7 @@ EOD,
      * @param string|null $token token
      *
      * @return object
-     * @throws \RedisException
+     * @throws \RedisException|\Kaadon\Jwt\JwtException
      */
     public static function verify(string $token = null): object
     {
@@ -121,14 +124,17 @@ EOD,
      *
      * @param $identification
      * @return false|int|Redis
-     * @throws RedisException
+     * @throws RedisException|\Kaadon\Jwt\JwtException
      */
-    public static function delete($identification)
+    public static function delete($identification): bool|int|Redis
     {
         $config = Config::get('jwt.cache');
         return self::redis(is_array($config) ? $config : [])->del(($config['prefix'] ?? "cache:JWT:") . $identification);
     }
 
+    /**
+     * @throws \Kaadon\Jwt\JwtException
+     */
     public static function redis(array $param): Redis
     {
         try {
