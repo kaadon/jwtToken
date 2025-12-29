@@ -1,3 +1,6 @@
 <?php
+
+use Kaadon\Jwt\Jwt;
+
 require_once 'vendor/autoload.php';
-\Kaadon\Jwt\Jwt::create('555',[]);
+Jwt::create('555',[]);
