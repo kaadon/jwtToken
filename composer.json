@@ -12,7 +12,7 @@
   "license": "Apache-2.0",
   "require": {
     "PHP": ">=7.1",
-    "firebase/php-jwt": "^6",
+    "firebase/php-jwt": "^6.11",
     "ext-redis": "*"
   },
   "authors": [

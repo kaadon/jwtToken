@@ -5,12 +5,12 @@ namespace Kaadon\Jwt;
 
 
 use Firebase\JWT\JWT as BaseJwt;
+use Firebase\JWT\Key;
 use Redis;
 use RedisException;
 use think\Exception;
 use think\facade\Config;
 use think\facade\Request;
-use think\response\Json;
 
 
 class Jwt
@@ -99,9 +99,9 @@ EOD,
             if (!$key) {
                 throw new Exception('Public key not configured');
             }
-            $decoded = BaseJwt::decode($token, $key, array($config['alg']));
+            $decoded = BaseJwt::decode($token, new Key($key, $config['alg']));
 
-            if (!$decoded || !is_object($decoded)) {
+            if (!is_object($decoded)) {
                 throw new Exception('Token validation failed');
             }
 

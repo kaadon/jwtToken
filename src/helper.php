@@ -1,23 +1,25 @@
 <?php
 
 
+use Kaadon\Jwt\Jwt;
+
 if (!function_exists('jwt_create')) {
-    function jwt_create(string $identification,$data = [])
+    function jwt_create(string $identification,$data = []): string
     {
-        return \Kaadon\Jwt\Jwt::create($identification,$data);
+        return Jwt::create($identification,$data);
     }
 }
 if (!function_exists('jwt_verify')) {
     function jwt_verify($token = null)
     {
-        return \Kaadon\Jwt\Jwt::verify($token);
+        return Jwt::verify($token);
     }
 }
 if (!function_exists('jwt_delete')) {
     function jwt_delete($identification = null)
     {
         if ($identification){
-            return \Kaadon\Jwt\Jwt::delete($identification);
+            return Jwt::delete($identification);
         }
         return false;
     }
@@ -26,6 +28,6 @@ if (!function_exists('jwt_delete')) {
 if (!function_exists('jwt_realIp')) {
     function jwt_realIp()
     {
-        return \Kaadon\Jwt\Jwt::getIp();
+        return Jwt::getIp();
     }
 }
