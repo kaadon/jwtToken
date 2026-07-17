@@ -5,8 +5,7 @@ namespace Kaadon\Jwt;
 
 
 use Firebase\JWT\JWT as BaseJwt;
-use Redis;
-use RedisException;
+use Firebase\JWT\Key;
 use think\facade\Config;
 use think\facade\Request;
 
@@ -15,27 +14,32 @@ class Jwt
 {
 
     private static array $configuration = [
-        // JWT加密算法
-        'alg' => 'ES256',
+        // JWT加密算法（pem 兜底密钥为 RSA，对应 RS256）
+        'alg' => 'RS256',
         //签发者
         'issuer' => 'kaadon',
-        // 非对称需要配置
-        'private_key' => <<<EOD
------BEGIN PRIVATE KEY-----
-MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgYJaXP8KapeFy4Lto
-85tNQ+wRzNYGAGZXoZjMb2/GHoihRANCAAQLFJ+Lgjt5A/Vnc8OG6m2TBK5xxGLg
-ZRdae5ojDObyiXsxzX267LJ1KMUAad3FFYSyQWd7BtiPWrJIWPcsQsIK
------END PRIVATE KEY-----
-EOD,
-        'public_key' => <<<EOD
------BEGIN PUBLIC KEY-----
-MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAECxSfi4I7eQP1Z3PDhuptkwSuccRi
-4GUXWnuaIwzm8ol7Mc19uuyydSjFAGndxRWEskFnewbYj1qySFj3LELCCg==
------END PUBLIC KEY-----
-EOD,
+        // 非对称密钥：留空时运行时兜底读取 src/config/pem/*.pem
+        'private_key' => '',
+        'public_key' => '',
         // JWT有效时间
         'exp' => 3600 * 24 * 7,
     ];
+
+    /**
+     * 合并 token 配置：非对称密钥缺省时惰性兜底读取 src/config/pem/*.pem
+     *
+     * @return array
+     */
+    private static function tokenConfig(): array
+    {
+        $config = array_merge(self::$configuration, (array)Config::get('jwt'));
+        foreach (['private_key' => 'private.pem', 'public_key' => 'public.pem'] as $field => $file) {
+            if (empty($config[$field])) {
+                $config[$field] = (string)@file_get_contents(__DIR__ . '/config/pem/' . $file);
+            }
+        }
+        return $config;
+    }
 
     /**
      * token生成
@@ -43,12 +47,10 @@ EOD,
      * @param string $identify
      * @param array $data
      * @return string
-     * @throws RedisException|\Kaadon\Jwt\JwtException
      */
     public static function create(string $identify, array $data = []): string
     {
-        $config = Config::get('jwt.token');
-        $config = array_merge(self::$configuration, $config);
+        $config = self::tokenConfig();
         $time = time();
         $exp = $config['exp'] ?: 60 * 60 * 24 * 7;
         $key = $config['private_key'];
@@ -67,8 +69,7 @@ EOD,
         ];
         $token = BaseJwt::encode($payload, $key, $config['alg']);
         if (!empty($config['elsewhere'])) {
-            $configCache = Config::get('jwt.cache');
-            self::redis(is_array($configCache) ? $configCache : [])->set(($configCache['prefix'] ?? "cache:JWT:") . $data['identify'], sha1($token), $config['exp'] ?: 60 * 60 * 24 * 7);
+            JwtCache::set($data['identify'], sha1($token), null, $config['exp'] ?: 60 * 60 * 24 * 7);
         }
         return $token;
     }
@@ -79,7 +80,7 @@ EOD,
      * @param string|null $token token
      *
      * @return object
-     * @throws \RedisException|\Kaadon\Jwt\JwtException
+     * @throws \Kaadon\Jwt\JwtException
      */
     public static function verify(string $token = null): object
     {
@@ -91,22 +92,18 @@ EOD,
             throw new JwtException('The token does not exist or is illegal');
         }
         $token = substr($token, 7);
-        $config = Config::get('jwt.token');
-        $config = array_merge(self::$configuration, $config);
+        $config = self::tokenConfig();
         $key = $config['public_key'];
         if (!$key) {
             throw new JwtException('Public key not configured');
         }
-        $headers =  new \stdClass();
-        $headers->alg = $config['alg'];
         try {
-            $decoded = BaseJwt::decode($token, $key, $headers);
+            $decoded = BaseJwt::decode($token, new Key($key, $config['alg']));
         } catch (\Exception $exception) {
             throw new JwtException("error:{$exception->getMessage()}");
         }
         if (!empty($config['elsewhere'])) {
-            $configCache = Config::get('jwt.cache');
-            $OldToken = self::redis(is_array($configCache) ? $configCache : [])->get(($configCache['prefix'] ?? "cache:JWT:") . $decoded->data->identification);
+            $OldToken = JwtCache::get($decoded->data->identify);
             if (empty($OldToken)) throw new JwtException('You are not logged in or your login has expired');
             if ($OldToken != sha1($token)) throw new JwtException('Your account is logged in elsewhere');
         }
@@ -123,34 +120,11 @@ EOD,
      * token删除
      *
      * @param $identification
-     * @return false|int|Redis
-     * @throws RedisException|\Kaadon\Jwt\JwtException
+     * @return bool
      */
-    public static function delete($identification): bool|int|Redis
+    public static function delete($identification): bool
     {
-        $config = Config::get('jwt.cache');
-        return self::redis(is_array($config) ? $config : [])->del(($config['prefix'] ?? "cache:JWT:") . $identification);
-    }
-
-    /**
-     * @throws \Kaadon\Jwt\JwtException
-     */
-    public static function redis(array $param): Redis
-    {
-        try {
-            //逻辑代码
-            $redis = new Redis();
-            $redis->connect($param['host'] ?: '127.0.0.1', $param['port'] ?: 6379);
-            if ($param['password']) {
-                $redis->auth($param['password']);
-            }
-            if ($param['select']) {
-                $redis->select($param['select']);
-            }
-            return $redis;
-        } catch (\Exception $exception) {
-            throw new JwtException("系统错误:联系管理员[REDIS]");
-        }
+        return JwtCache::del($identification);
     }
 
     public static function getIp($type = 0, $adv = true)
@@ -159,7 +133,10 @@ EOD,
         static $ip = NULL;
         if ($ip !== NULL) return $ip[$type];
         if ($adv) {
-            if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            if (isset($_SERVER['HTTP_X_REAL_IP'])) {
+                // 优先使用 nginx proxy_set_header X-Real-IP $XRealIP;
+                $ip = trim($_SERVER['HTTP_X_REAL_IP']);
+            } elseif (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
                 $arr = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
                 $pos = array_search('unknown', $arr);
                 if (false !== $pos) unset($arr[$pos]);

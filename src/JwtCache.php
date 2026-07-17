@@ -46,9 +46,9 @@ class JwtCache
      * @param null $Module
      * @param int $expire 有效时间
      *
-     * @return array 用户信息
+     * @return mixed 缓存值
      */
-    public static function set(string $identification, $value, $Module = null, int $expire = 0): array
+    public static function set(string $identification, $value, $Module = null, int $expire = 0): mixed
     {
         $key = self::key($identification , $Module);
         $val = $value;
@@ -63,9 +63,9 @@ class JwtCache
      * @param string $identification
      *
      * @param null $Module
-     * @return array 用户信息
+     * @return mixed 缓存值，未命中为 null
      */
-    public static function get(string $identification, $Module = null): array
+    public static function get(string $identification, $Module = null): mixed
     {
         $key = self::key($identification , $Module);
         return Cache::get($key);

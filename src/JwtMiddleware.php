@@ -5,7 +5,6 @@ namespace Kaadon\Jwt;
 
 
 use Closure;
-use RedisException;
 use think\Request;
 use think\Response;
 use think\facade\Config;
@@ -18,33 +17,18 @@ class JwtMiddleware
      * @param Request $request
      * @param Closure $next
      * @return Response
-     * @throws RedisException|\Kaadon\Jwt\JwtException
+     * @throws \Kaadon\Jwt\JwtException
      */
     public function handle(Request $request, Closure $next): Response
     {
         $Currentoute = strtolower($request->pathinfo());
-        $api_white_list = Config::get('jwt.api.white');
+        $api_white_list = Config::get('jwt.white') ?? [];
         if (!in_array($Currentoute, $api_white_list)) {
             $tokenBearer = app('request')->header('Authorization');
             if (!$tokenBearer) {
                 throw new JwtException('token is must.');
             }
-            $token = substr($tokenBearer, 7);
-            if (!$token) {
-                throw new JwtException('token is required.');
-            }
-            $JwtData = Jwt::verify($token);
-            $data = [
-                'username' => $JwtData->data->identification
-            ];
-            $Oldtoken = JwtCache::get((int) $data['username']);
-            if ($Oldtoken != $token){
-                throw new JwtException('你的账号在别处登录!');
-            }
-            if (\think\facade\Request::ip() != $JwtData->data->ip){
-                throw new JwtException('网络环境更换,请重新登录!');
-            }
-            $request->username = $JwtData->data->identification;
+            $request->JwtData = Jwt::verify($tokenBearer);
         }
         return $next($request);
     }
