@@ -11,9 +11,10 @@
   "homepage": "https://developer.kaadon.com/",
   "license": "Apache-2.0",
   "require": {
-    "PHP": ">=7.1",
-    "firebase/php-jwt": "^7",
-    "ext-redis": "*"
+    "php": ">=8.0",
+    "firebase/php-jwt": "v7.1.0",
+    "ext-redis": "*",
+    "ext-sodium": "*"
   },
   "authors": [
     {
@@ -33,11 +34,11 @@
   "extra": {
     "think":{
       "config":{
-        "jwt": "src/config/jwt.php"
+        "jwt": "config/jwt.php"
       }
     }
   },
   "require-dev": {
-    "topthink/framework": "^6|^8"
+    "topthink/framework": "^8"
   }
 }
