@@ -14,19 +14,6 @@ use think\facade\Request;
 class Jwt
 {
 
-    private static array $configuration = [
-        // JWT加密算法（pem 兜底密钥为 Ed25519，base64url 编码，依赖 ext-sodium）
-        'alg' => 'EdDSA',
-        //签发者
-        'issuer' => 'kaadon',
-        // 非对称密钥：留空时兜底读取库自带的 config/pem/*.pem（仅供快速上手，生产环境务必通过
-        // JWT_PRIVATE_KEY/JWT_PUBLIC_KEY 或应用自己的 jwt 配置覆盖为使用者自行生成的密钥）
-        'private_key' => '',
-        'public_key' => '',
-        // JWT有效时间
-        'exp' => 3600 * 24 * 7,
-    ];
-
     /**
      * 库自带兜底 pem 文件内容缓存：文件内容在进程生命周期内不变，避免每次调用重复读盘。
      *
@@ -35,13 +22,14 @@ class Jwt
     private static array $pemCache = [];
 
     /**
-     * 合并 token 配置：非对称密钥缺省时兜底读取库自带的 config/pem/*.pem。
+     * 合并 token 配置：默认值单一来源于 config/jwt.php，非对称密钥缺省时兜底读取库自带的 config/pem/*.pem。
      *
      * @return array
      */
     private static function tokenConfig(): array
     {
-        $config = array_merge(self::$configuration, (array)Config::get('jwt'));
+        $default = require __DIR__ . '/../config/jwt.php';
+        $config = array_merge($default, (array)Config::get('jwt'));
         if ($config['alg'] === 'EdDSA') {
             foreach (['private_key' => 'private.pem', 'public_key' => 'public.pem'] as $field => $file) {
                 if (empty($config[$field])) {
@@ -66,6 +54,9 @@ class Jwt
         $time = time();
         $ttl = $config['exp'] ?: 60 * 60 * 24 * 7;
         $key = $config['private_key'];
+        if (!$key) {
+            throw new JwtException('Private key not configured');
+        }
         $iss = $config['issuer'];
         $exp = $time + $ttl;
         $data['identify'] = $identify;
@@ -155,30 +146,7 @@ class Jwt
 
     public static function getIp($type = 0, $adv = true)
     {
-        $type = $type ? 1 : 0;
-        static $ip = NULL;
-        if ($ip !== NULL) return $ip[$type];
-        if ($adv) {
-            if (isset($_SERVER['HTTP_X_REAL_IP'])) {
-                // 优先使用 nginx proxy_set_header X-Real-IP $XRealIP;
-                $ip = trim($_SERVER['HTTP_X_REAL_IP']);
-            } elseif (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-                $arr = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
-                $pos = array_search('unknown', $arr);
-                if (false !== $pos) unset($arr[$pos]);
-                $ip = trim($arr[0]);
-            } elseif (isset($_SERVER['HTTP_CLIENT_IP'])) {
-                $ip = $_SERVER['HTTP_CLIENT_IP'];
-            } elseif (isset($_SERVER['REMOTE_ADDR'])) {
-                $ip = $_SERVER['REMOTE_ADDR'];
-            }
-        } elseif (isset($_SERVER['REMOTE_ADDR'])) {
-            $ip = $_SERVER['REMOTE_ADDR'];
-        }
-        // IP地址合法验证
-        $long = sprintf("%u", ip2long((string)$ip));
-        $ip = $long ? array($ip, $long) : array('0.0.0.0', 0);
-        return $ip[$type];
+        return Request::ip($type, $adv);
     }
 
 

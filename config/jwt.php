@@ -20,4 +20,8 @@ return [
     'exp' => 3600 * 24 * 7,
     // 免鉴权路由白名单（JwtMiddleware 读取，pathinfo 小写后精确匹配）
     'white' => [],
+    // 会话缓存处理器：留空默认复用应用的 think\facade\Cache（多机部署时各机缓存不隔离）。
+    // 需要独立隔离（例如专用 Redis host/port/select/prefix）时，实现
+    // \Kaadon\Jwt\Contract\JwtCacheHandler 接口，并在此处填入实现类的完整类名。
+    'cache_handler' => '',
 ];
